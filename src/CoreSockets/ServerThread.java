@@ -1,11 +1,13 @@
 package CoreSockets;
 
-import com.sun.deploy.net.protocol.ProtocolType;
-import com.sun.security.ntlm.Server;
+//import com.sun.deploy.net.HttpRequest;
+//import com.sun.deploy.net.protocol.ProtocolType;
+////import com.sun.org.apache.xpath.internal.operations.String;
+//import com.sun.security.ntlm.Server;
+//import sun.net.www.http.HttpClient;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import javax.print.DocFlavor;
+import java.io.*;
 import java.net.ProtocolFamily;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,7 +19,6 @@ public class ServerThread implements Runnable
 	public ServerSocket server;
 	public ServerThread(int port) throws Exception
 	{
-		System.out.println("新开启一个线程");
 		this.port = port;
 		server = new ServerSocket(port);
 	}
@@ -26,53 +27,70 @@ public class ServerThread implements Runnable
 	{
 		try
 		{
+			//获得连接并开启新的线程用于捕获请求
 			Socket client = server.accept();
-
 			new Thread(this).start();
-			System.out.println(this+"--"+Thread.currentThread());
 
-			InputStream iStream = client.getInputStream();
-			byte[] bytes = new byte[1024];
-			int len;
-			StringBuilder sb = new StringBuilder();
-			while((len = iStream.read(bytes))!=-1)
+			//获取流
+			InputStreamReader inReader = new InputStreamReader(client.getInputStream());
+
+			StringBuilder msg = new StringBuilder();
+			int len = -1;
+			char[] bytes = new char[2048];
+			try
 			{
-				sb.append(new String(bytes,0,len,"UTF-8"));
+				do{
+					if((len=inReader.read(bytes))!=-1)
+					{
+						msg.append(bytes,0,len);
+					}
+				}
+				while (inReader.ready());
 			}
-			client.shutdownInput();
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			java.lang.String smsg = msg.toString();
+			java.lang.String sm = smsg.substring(smsg.indexOf("/")+1,smsg.indexOf("HTTP/")).trim();
 
-			OutputStream ostream = client.getOutputStream();
+			try
+			{
+				File fil = new File(this.getClass().getResource("/").toString());
+				String path = fil.getParentFile().getPath()+"\\webapps\\pages\\"+sm;
+				path = path.replace("file:\\","");
+				System.out.println(path);
+				File file = new File(path);
+				System.out.println(file.exists());
 
-			System.out.println(ostream);
-			System.out.println("************************");
+				PrintStream out = new PrintStream(client.getOutputStream());
+				out.println("HTTP/1.1 200 OK");
+				out.println("Content-Type:text/html;charset:UTF-8");
+				out.println();
+				FileReader fr = new FileReader(file);
+				char[] bs = new char[1024];
+				int le = 0;
+				while((le = fr.read(bs))!=-1)
+				{
+					out.print(new String(bs,0,le));
+				}
+				fr.close();
 
-			String httpgram = "HTTP/1.1 200 OK\n" +
-					"\n" +
-					" \n" +
-					"\n" +
-					"Server:Apache Tomcat/5.0.12\n" +
-					"\n" +
-					"Date:Mon,6Oct2003 13:23:42 GMT\n" +
-					"\n" +
-					"Content-Length:112";
+				out.flush();
+				out.close();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
 
-			System.out.println("send msg to client");
-			ostream.write(httpgram.getBytes("UTF-8"));
-
-			ostream.flush();
-			ostream.close();
-
-			iStream.close();
-
+			inReader.close();
 			client.close();
-			System.out.println("Server:"+new Date().toString()+" - \n"+client.getInetAddress()+" - \n"+sb.toString());
-			System.out.println();
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
-
 
 	}
 }

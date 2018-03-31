@@ -1,17 +1,8 @@
 package CoreSockets;
 
-//import com.sun.deploy.net.HttpRequest;
-//import com.sun.deploy.net.protocol.ProtocolType;
-////import com.sun.org.apache.xpath.internal.operations.String;
-//import com.sun.security.ntlm.Server;
-//import sun.net.www.http.HttpClient;
-
-import javax.print.DocFlavor;
 import java.io.*;
-import java.net.ProtocolFamily;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Date;
 
 public class ServerThread implements Runnable
 {
@@ -75,7 +66,6 @@ public class ServerThread implements Runnable
 					out.print(new String(bs,0,le));
 				}
 				fr.close();
-
 				out.flush();
 				out.close();
 			}
